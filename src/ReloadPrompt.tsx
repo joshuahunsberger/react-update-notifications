@@ -1,12 +1,26 @@
+import React from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
+
+// Set a short interval for demo purposes
+const UPDATE_INTERVAL_MS: number = 60 * 1000; // 60 seconds
 
 function ReloadPrompt() {
   const {
     needRefresh: [needRefresh],
     updateServiceWorker,
   } = useRegisterSW({
-    onRegistered() {
-      console.log("Service Worker registered.");
+    /**
+     * This callback is fired when the service worker is registered.
+     */
+    onRegistered(registration) {
+      if (registration) {
+        console.log("Service Worker registered.");
+        // Set up the interval to check for updates
+        setInterval(() => {
+          console.log("Checking for new service worker update...");
+          registration.update(); // Manually trigger an update check
+        }, UPDATE_INTERVAL_MS);
+      }
     },
     onRegisterError(error) {
       console.log("Service Worker registration error:", error);
@@ -31,10 +45,10 @@ function ReloadPrompt() {
   return null;
 }
 
-// Basic styles
-const styles = {
+// Define types for the styles object
+const styles: { [key: string]: React.CSSProperties } = {
   container: {
-    position: "fixed" as const,
+    position: "fixed",
     bottom: "20px",
     left: "20px",
     backgroundColor: "#007bff",
@@ -43,8 +57,8 @@ const styles = {
     borderRadius: "8px",
     boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
     zIndex: 1000,
-    display: "flex" as const,
-    alignItems: "center" as const,
+    display: "flex",
+    alignItems: "center",
     gap: "1em",
   },
   message: {
@@ -56,8 +70,8 @@ const styles = {
     border: "none",
     padding: "0.5em 1em",
     borderRadius: "4px",
-    cursor: "pointer" as const,
-    fontWeight: "bold" as const,
+    cursor: "pointer",
+    fontWeight: "bold",
   },
 };
 
