@@ -6,8 +6,8 @@ function App() {
     <>
       <div className="App">
         <header className="App-header">
-          <h1>Service Worker Demo - v1.0</h1>
-          <p>This is the first deployed version.</p>
+          <h1>Service Worker Demo - v2.0</h1>
+          <p>We've just deployed a new version.</p>
         </header>
 
         <ReloadPrompt />
