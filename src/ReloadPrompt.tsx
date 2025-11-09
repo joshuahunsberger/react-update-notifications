@@ -18,7 +18,11 @@ function ReloadPrompt() {
         // Set up the interval to check for updates
         setInterval(() => {
           console.log("Checking for new service worker update...");
-          registration.update(); // Manually trigger an update check
+          registration
+            .update() // Manually trigger an update check
+            .catch((error) => {
+              console.error("Error during update check:", error);
+            });
         }, UPDATE_INTERVAL_MS);
       }
     },
