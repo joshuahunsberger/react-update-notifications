@@ -27,8 +27,8 @@ function ReloadPrompt() {
     },
   });
 
-  const handleUpdate = () => {
-    updateServiceWorker(true);
+  const handleUpdate = async () => {
+    await updateServiceWorker(true);
   };
 
   if (needRefresh) {
