@@ -8,17 +8,27 @@ function ReloadPrompt() {
     needRefresh: [needRefresh],
     updateServiceWorker,
   } = useRegisterSW({
-    onRegistered(registration) {
+    onRegisteredSW(swScriptUrl, registration) {
       if (registration) {
-        console.log("Service Worker registered.");
-        setInterval(() => {
-          console.log("Checking for new service worker update...");
-          registration
-            .update()
-            .catch((error) => {
-              console.error("Error during update check:", error);
-            });
-        }, UPDATE_INTERVAL_MS);
+        setInterval(async () => {
+          if (registration.installing || !navigator)
+            return
+
+          if (('connection' in navigator) && !navigator.onLine)
+            return
+
+          const resp = await fetch(swScriptUrl, {
+          cache: 'no-store',
+          headers: {
+            'cache': 'no-store',
+            'cache-control': 'no-cache',
+          },
+        })
+
+        if (resp?.status === 200)
+          await registration.update()
+
+        }, UPDATE_INTERVAL_MS)
       }
     },
     onRegisterError(error) {
