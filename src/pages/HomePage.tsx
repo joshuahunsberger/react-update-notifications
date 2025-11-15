@@ -8,7 +8,7 @@ function HomePage() {
       <h1>Service Worker Demo - {version}</h1>
       <p>{message}</p>
       <p>
-        The app is now checking for updates in the background every 60 seconds.
+        The app is now checking for updates in the background every hour and when the tab regains focus.
       </p>
     </header>
   );
