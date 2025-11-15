@@ -1,12 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 
 const UPDATE_INTERVAL_MS: number = 60 * 60 * 1000;
+const FOCUS_THROTTLE_MS: number = 5 * 60 * 1000
 
 function ReloadPrompt() {
   const [registration, setRegistration] =
     useState<ServiceWorkerRegistration | null>(null);
   const [swUrl, setSwUrl] = useState<string | null>(null);
+
+  const lastCheckTimestamp = useRef<number>(Date.now())
 
   const {
     needRefresh: [needRefresh],
@@ -60,6 +63,7 @@ function ReloadPrompt() {
     if (!registration || !swUrl) return;
 
     const intervalId = setInterval(() => {
+      lastCheckTimestamp.current = Date.now()
       updateCheck(registration, swUrl);
     }, UPDATE_INTERVAL_MS);
 
@@ -68,22 +72,33 @@ function ReloadPrompt() {
 
   useEffect(() => {
     if (!registration || !swUrl) {
-      return;
+      return
     }
 
     const handleFocus = () => {
-      console.log("Tab gained focus, checking for new update...");
-      updateCheck(registration, swUrl);
-    };
+      const now = Date.now()
+      if (now - lastCheckTimestamp.current < FOCUS_THROTTLE_MS) {
+        console.log(
+          'Focus check skipped: Throttled. Last check was too recent.',
+        )
+        return
+      }
 
-    handleFocus();
+      lastCheckTimestamp.current = now
+      console.log('Tab gained focus, checking for new update...')
+      updateCheck(registration, swUrl)
+    }
 
-    window.addEventListener("focus", handleFocus);
+    console.log('Initial component load, checking for new update...')
+    lastCheckTimestamp.current = Date.now()
+    updateCheck(registration, swUrl)
+
+    window.addEventListener('focus', handleFocus)
 
     return () => {
-      window.removeEventListener("focus", handleFocus);
-    };
-  }, [registration, swUrl]);
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [registration, swUrl])
 
   const handleUpdate = () => {
     updateServiceWorker(false);
