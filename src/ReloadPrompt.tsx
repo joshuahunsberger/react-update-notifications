@@ -1,7 +1,6 @@
 import React from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 
-// Set a short interval for demo purposes
 const UPDATE_INTERVAL_MS: number = 60 * 1000; // 60 seconds
 
 function ReloadPrompt() {
@@ -9,17 +8,13 @@ function ReloadPrompt() {
     needRefresh: [needRefresh],
     updateServiceWorker,
   } = useRegisterSW({
-    /**
-     * This callback is fired when the service worker is registered.
-     */
     onRegistered(registration) {
       if (registration) {
         console.log("Service Worker registered.");
-        // Set up the interval to check for updates
         setInterval(() => {
           console.log("Checking for new service worker update...");
           registration
-            .update() // Manually trigger an update check
+            .update()
             .catch((error) => {
               console.error("Error during update check:", error);
             });
@@ -31,8 +26,9 @@ function ReloadPrompt() {
     },
   });
 
-  const handleUpdate = async () => {
-    await updateServiceWorker(true);
+  const handleUpdate = () => {
+    updateServiceWorker(false);
+    window.location.reload();
   };
 
   if (needRefresh) {
@@ -49,7 +45,6 @@ function ReloadPrompt() {
   return null;
 }
 
-// Define types for the styles object
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     position: "fixed",
