@@ -1,40 +1,89 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 
-const UPDATE_INTERVAL_MS: number = 60 * 1000; // 60 seconds
+const UPDATE_INTERVAL_MS: number = 60 * 60 * 1000;
 
 function ReloadPrompt() {
+  const [registration, setRegistration] =
+    useState<ServiceWorkerRegistration | null>(null);
+  const [swUrl, setSwUrl] = useState<string | null>(null);
+
   const {
     needRefresh: [needRefresh],
     updateServiceWorker,
   } = useRegisterSW({
     onRegisteredSW(swScriptUrl, registration) {
-      if (registration) {
-        setInterval(async () => {
-          if (registration.installing || !navigator)
-            return
-
-          if (('connection' in navigator) && !navigator.onLine)
-            return
-
-          const resp = await fetch(swScriptUrl, {
-          cache: 'no-store',
-          headers: {
-            'cache': 'no-store',
-            'cache-control': 'no-cache',
-          },
-        })
-
-        if (resp?.status === 200)
-          await registration.update()
-
-        }, UPDATE_INTERVAL_MS)
-      }
+      console.log("Service Worker registered");
+      setRegistration(registration || null);
+      setSwUrl(swScriptUrl);
     },
     onRegisterError(error) {
       console.log("Service Worker registration error:", error);
     },
   });
+
+  const updateCheck = async (
+    reg: ServiceWorkerRegistration | null,
+    url: string | null
+  ) => {
+    try {
+      if (!reg || !url || !navigator) return;
+
+      if (reg.installing) {
+        console.log("Update check skipped: Another update is installing.");
+        return;
+      }
+
+      if ("connection" in navigator && !navigator.onLine) {
+        console.log("Update check skipped: App is offline.");
+        return;
+      }
+
+      const resp = await fetch(url, {
+        cache: "no-store",
+        headers: {
+          cache: "no-store",
+          "cache-control": "no-cache",
+        },
+      });
+
+      if (resp?.status === 200) {
+        console.log("Server reachable, calling registration.update()");
+        await reg.update();
+      }
+    } catch (e) {
+      console.warn("Update check failed:", e);
+    }
+  };
+
+  useEffect(() => {
+    if (!registration || !swUrl) return;
+
+    const intervalId = setInterval(() => {
+      updateCheck(registration, swUrl);
+    }, UPDATE_INTERVAL_MS);
+
+    return () => clearInterval(intervalId);
+  }, [registration, swUrl]);
+
+  useEffect(() => {
+    if (!registration || !swUrl) {
+      return;
+    }
+
+    const handleFocus = () => {
+      console.log("Tab gained focus, checking for new update...");
+      updateCheck(registration, swUrl);
+    };
+
+    handleFocus();
+
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [registration, swUrl]);
 
   const handleUpdate = () => {
     updateServiceWorker(false);
