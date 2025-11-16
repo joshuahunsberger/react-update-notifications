@@ -1,10 +1,16 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.tsx'
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+import App from "./App";
+import "./index.css";
+
+// This must match the 'base' in vite.config.ts
+const REPO_NAME = "react-update-notifications";
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
-  </StrictMode>,
-)
+    <BrowserRouter basename={`/${REPO_NAME}`}>
+      <App />
+    </BrowserRouter>
+  </StrictMode>
+);
