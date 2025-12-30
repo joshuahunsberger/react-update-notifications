@@ -1,7 +1,7 @@
 function HomePage() {
   // This is the text we will change between v1 and v2
-  const version: string = "v2.0";
-  const message: string = "This is the second deployed version.";
+  const version: string = "v1.0";
+  const message: string = "This is the first deployed version.";
   return (
     <header className="App-header">
       <h1>Service Worker Demo - {version}</h1>
