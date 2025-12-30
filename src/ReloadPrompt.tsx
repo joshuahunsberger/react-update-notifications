@@ -2,103 +2,70 @@ import React, { useEffect, useRef, useState } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 
 const UPDATE_INTERVAL_MS: number = 60 * 60 * 1000;
-const FOCUS_THROTTLE_MS: number = 5 * 60 * 1000
+const FOCUS_THROTTLE_MS: number = 5 * 60 * 1000;
 
 function ReloadPrompt() {
   const [registration, setRegistration] =
     useState<ServiceWorkerRegistration | null>(null);
-  const [swUrl, setSwUrl] = useState<string | null>(null);
 
-  const lastCheckTimestamp = useRef<number>(Date.now())
+  const lastCheckTimestamp = useRef<number>(Date.now());
 
   const {
     needRefresh: [needRefresh],
     updateServiceWorker,
   } = useRegisterSW({
-    onRegisteredSW(swScriptUrl, registration) {
+    onRegisteredSW(_, registration) {
       console.log("Service Worker registered");
       setRegistration(registration || null);
-      setSwUrl(swScriptUrl);
     },
     onRegisterError(error) {
       console.log("Service Worker registration error:", error);
     },
   });
 
-  const updateCheck = async (
-    reg: ServiceWorkerRegistration | null,
-    url: string | null
-  ) => {
+  const updateCheck = async (reg: ServiceWorkerRegistration | null) => {
     try {
-      if (!reg || !url || !navigator) return;
+      if (!reg || !navigator) return;
 
-      if (reg.installing) {
-        console.log("Update check skipped: Another update is installing.");
-        return;
-      }
+      if (reg.installing) return;
 
-      if ("connection" in navigator && !navigator.onLine) {
-        console.log("Update check skipped: App is offline.");
-        return;
-      }
+      if ("connection" in navigator && !navigator.onLine) return;
 
-      const resp = await fetch(url, {
-        cache: "no-store",
-        headers: {
-          cache: "no-store",
-          "cache-control": "no-cache",
-        },
-      });
-
-      if (resp?.status === 200) {
-        console.log("Server reachable, calling registration.update()");
-        await reg.update();
-      }
+      await reg.update();
     } catch (e) {
       console.warn("Update check failed:", e);
     }
   };
 
   useEffect(() => {
-    if (!registration || !swUrl) return;
+    if (!registration) return;
 
     const intervalId = setInterval(() => {
-      lastCheckTimestamp.current = Date.now()
-      updateCheck(registration, swUrl);
+      lastCheckTimestamp.current = Date.now();
+      updateCheck(registration);
     }, UPDATE_INTERVAL_MS);
 
     return () => clearInterval(intervalId);
-  }, [registration, swUrl]);
+  }, [registration]);
 
   useEffect(() => {
-    if (!registration || !swUrl) {
-      return
-    }
+    if (!registration) return;
 
     const handleFocus = () => {
-      const now = Date.now()
-      if (now - lastCheckTimestamp.current < FOCUS_THROTTLE_MS) {
-        console.log(
-          'Focus check skipped: Throttled. Last check was too recent.',
-        )
-        return
-      }
+      const now = Date.now();
+      if (now - lastCheckTimestamp.current < FOCUS_THROTTLE_MS) return;
 
-      lastCheckTimestamp.current = now
-      console.log('Tab gained focus, checking for new update...')
-      updateCheck(registration, swUrl)
-    }
+      lastCheckTimestamp.current = now;
+      updateCheck(registration);
+    };
 
-    console.log('Initial component load, checking for new update...')
-    lastCheckTimestamp.current = Date.now()
-    updateCheck(registration, swUrl)
+    lastCheckTimestamp.current = Date.now();
+    updateCheck(registration);
 
-    window.addEventListener('focus', handleFocus)
+    window.addEventListener("focus", handleFocus);
 
-    return () => {
-      window.removeEventListener('focus', handleFocus)
-    }
-  }, [registration, swUrl])
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [registration]);
 
   const handleUpdate = () => {
     updateServiceWorker(false);
